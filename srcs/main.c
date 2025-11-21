@@ -42,47 +42,64 @@ int main(int argc, char **argv)
 	for (size_t i = 0; i < iFileCount; i++)
 	{
 		t_commit_type eType = eGitCharToType(arrFiles[i].cStatus);
+		int exists = (access(arrFiles[i].sPath, F_OK) == 0);
+
 		char *sMsg = strBuildCommitMessage(arrFiles[i].sPath, eType);
 		if (!sMsg) continue;
 
+		// Mode debug safe
 		if (bSafeMode)
 		{
-			printf("[SAFE] %s\n", sMsg);
+			printf("[SAFE DEBUG] %zu | status='%c' | exists=%d | path='%s'\n",
+				i, arrFiles[i].cStatus, exists, arrFiles[i].sPath);
+			printf("[SAFE DEBUG] commit message: %s\n", sMsg);
 			free(sMsg);
 			continue;
 		}
 
-		char tmpFile[256];
-		snprintf(tmpFile, sizeof(tmpFile), ".commitmsg_%lu_%zu.tmp", (unsigned long)time(NULL), i);
-		FILE *f = fopen(tmpFile, "wb");
-		if (!f) { free(sMsg); continue; }
-		fwrite(sMsg, 1, strlen(sMsg), f);
-		fclose(f);
+		// Skip deleted files that no longer exist on disk
+		if (eType == COMMIT_DELETE && !exists)
+		{
+			printf("[SKIP] Deleted file not on disk: %s\n", arrFiles[i].sPath);
+			free(sMsg);
+			continue;
+		}
 
-		char cmd[2048];
+		// Création d’un fichier temporaire pour commit
+		char sTmpName[256];
+		snprintf(sTmpName, sizeof(sTmpName), ".commitmsg_%lu_%zu.tmp", (unsigned long)time(NULL), i);
+
+		FILE *pTmp = fopen(sTmpName, "wb");
+		if (!pTmp)
+		{
+			free(sMsg);
+			continue;
+		}
+		fwrite(sMsg, 1, strlen(sMsg), pTmp);
+		fclose(pTmp);
+
+		char sCmd[2048];
 		switch (eType)
 		{
 			case COMMIT_ADD:
 			case COMMIT_MODIFY:
 			case COMMIT_RENAME:
-				snprintf(cmd, sizeof(cmd), "git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
-					arrFiles[i].sPath, tmpFile, arrFiles[i].sPath);
+				snprintf(sCmd, sizeof(sCmd),
+					"git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
+					arrFiles[i].sPath, sTmpName, arrFiles[i].sPath);
 				break;
 			case COMMIT_DELETE:
-				if (access(arrFiles[i].sPath, F_OK) == 0)
-					snprintf(cmd, sizeof(cmd), "git rm \"%s\" && git commit -F \"%s\" -- \"%s\"",
-						arrFiles[i].sPath, tmpFile, arrFiles[i].sPath);
-				else
-					snprintf(cmd, sizeof(cmd), "git rm --cached \"%s\" && git commit -F \"%s\" -- \"%s\"",
-						arrFiles[i].sPath, tmpFile, arrFiles[i].sPath);
+				snprintf(sCmd, sizeof(sCmd),
+					"git rm \"%s\" && git commit -F \"%s\" -- \"%s\"",
+					arrFiles[i].sPath, sTmpName, arrFiles[i].sPath);
 				break;
 			default:
-				snprintf(cmd, sizeof(cmd), "echo \"[UNKNOWN] %s\"", sMsg);
+				snprintf(sCmd, sizeof(sCmd), "echo \"[UNKNOWN] %s\"", sMsg);
 				break;
 		}
 
-		iRunGitCommand(cmd);
-		remove(tmpFile);
+		iRunGitCommand(sCmd);
+		remove(sTmpName);
 		free(sMsg);
 	}
 

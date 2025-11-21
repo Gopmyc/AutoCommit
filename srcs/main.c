@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include "auto_commit.h"
 #include "git_utils.h"
 #include "commit_builder.h"
@@ -21,9 +20,36 @@ static t_commit_type eGitCharToType(char c)
 	}
 }
 
+static void vPushTagPatch(void)
+{
+	char last_tag[128] = {0};
+	char new_tag[128];
+	int major=0, minor=0, patch=0;
+
+	FILE *fp = popen("git tag --list \"v*\" --sort=-creatordate", "r");
+	if (fp && fgets(last_tag, sizeof(last_tag), fp))
+	{
+		size_t len = strlen(last_tag);
+		if (len > 0 && (last_tag[len-1]=='\n'||last_tag[len-1]=='\r'))
+			last_tag[len-1] = 0;
+		sscanf(last_tag, "v%d.%d.%d", &major, &minor, &patch);
+	}
+	if (fp) pclose(fp);
+
+	patch++;
+	snprintf(new_tag, sizeof(new_tag), "v%d.%d.%d", major, minor, patch);
+
+	char cmd[256];
+	snprintf(cmd, sizeof(cmd), "git tag -a %s -m \"Release %s\"", new_tag, new_tag);
+	system(cmd);
+	snprintf(cmd, sizeof(cmd), "git push origin %s", new_tag);
+	system(cmd);
+	printf("[TAG] %s\n", new_tag);
+}
+
 int main(int argc, char **argv)
 {
-	t_git_file *arrFiles;
+	t_git_file *pArrFiles;
 	size_t iFileCount;
 	int bSafeMode = 0;
 
@@ -31,78 +57,49 @@ int main(int argc, char **argv)
 		bSafeMode = 1;
 
 	vInitUtf8();
-
-	arrFiles = arrGetGitFiles(&iFileCount);
-	if (!arrFiles || iFileCount == 0)
+	pArrFiles = arrGetGitFiles(&iFileCount);
+	if (!pArrFiles || iFileCount == 0)
 	{
 		printf("[INFO] Aucun fichier modifié détecté.\n");
 		return 0;
 	}
 
-	for (size_t i = 0; i < iFileCount; i++)
+	for (size_t i=0; i<iFileCount; i++)
 	{
-		t_commit_type eType = eGitCharToType(arrFiles[i].cStatus);
-		int exists = (access(arrFiles[i].sPath, F_OK) == 0);
-
-		char *sMsg = strBuildCommitMessage(arrFiles[i].sPath, eType);
+		t_commit_type eType = eGitCharToType(pArrFiles[i].cStatus);
+		char *sMsg = strBuildCommitMessage(pArrFiles[i].sPath, eType);
 		if (!sMsg) continue;
 
-		// Mode debug safe
 		if (bSafeMode)
 		{
-			printf("[SAFE DEBUG] %zu | status='%c' | exists=%d | path='%s'\n",
-				i, arrFiles[i].cStatus, exists, arrFiles[i].sPath);
-			printf("[SAFE DEBUG] commit message: %s\n", sMsg);
+			printf("[SAFE] %s\n", sMsg);
 			free(sMsg);
 			continue;
 		}
 
-		// Skip deleted files that no longer exist on disk
-		if (eType == COMMIT_DELETE && !exists)
-		{
-			printf("[SKIP] Deleted file not on disk: %s\n", arrFiles[i].sPath);
-			free(sMsg);
-			continue;
-		}
-
-		// Création d’un fichier temporaire pour commit
-		char sTmpName[256];
-		snprintf(sTmpName, sizeof(sTmpName), ".commitmsg_%lu_%zu.tmp", (unsigned long)time(NULL), i);
-
-		FILE *pTmp = fopen(sTmpName, "wb");
-		if (!pTmp)
-		{
-			free(sMsg);
-			continue;
-		}
-		fwrite(sMsg, 1, strlen(sMsg), pTmp);
-		fclose(pTmp);
-
-		char sCmd[2048];
+		char cmd[2048];
 		switch (eType)
 		{
 			case COMMIT_ADD:
 			case COMMIT_MODIFY:
 			case COMMIT_RENAME:
-				snprintf(sCmd, sizeof(sCmd),
-					"git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
-					arrFiles[i].sPath, sTmpName, arrFiles[i].sPath);
+				snprintf(cmd, sizeof(cmd), "git add \"%s\" && git commit -m \"%s\" -- \"%s\"",
+					pArrFiles[i].sPath, sMsg, pArrFiles[i].sPath);
 				break;
 			case COMMIT_DELETE:
-				snprintf(sCmd, sizeof(sCmd),
-					"git rm \"%s\" && git commit -F \"%s\" -- \"%s\"",
-					arrFiles[i].sPath, sTmpName, arrFiles[i].sPath);
+				snprintf(cmd, sizeof(cmd), "git rm \"%s\" && git commit -m \"%s\" -- \"%s\"",
+					pArrFiles[i].sPath, sMsg, pArrFiles[i].sPath);
 				break;
 			default:
-				snprintf(sCmd, sizeof(sCmd), "echo \"[UNKNOWN] %s\"", sMsg);
+				snprintf(cmd, sizeof(cmd), "echo \"[UNKNOWN] %s\"", sMsg);
 				break;
 		}
 
-		iRunGitCommand(sCmd);
-		remove(sTmpName);
+		iRunGitCommand(cmd);
+		vPushTagPatch();
 		free(sMsg);
 	}
 
-	vcFreeGitFiles(arrFiles, iFileCount);
+	vcFreeGitFiles(pArrFiles, iFileCount);
 	return 0;
 }

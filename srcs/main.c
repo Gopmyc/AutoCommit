@@ -23,7 +23,7 @@ static t_commit_type eGitCharToType(char c)
 
 int main(int argc, char **argv)
 {
-	t_git_file *pArrFiles;
+	t_git_file *arrFiles;
 	size_t iFileCount;
 	int bSafeMode = 0;
 
@@ -31,8 +31,9 @@ int main(int argc, char **argv)
 		bSafeMode = 1;
 
 	vInitUtf8();
-	pArrFiles = arrGetGitFiles(&iFileCount);
-	if (!pArrFiles || iFileCount == 0)
+
+	arrFiles = arrGetGitFiles(&iFileCount);
+	if (!arrFiles || iFileCount == 0)
 	{
 		printf("[INFO] Aucun fichier modifié détecté.\n");
 		return 0;
@@ -40,10 +41,9 @@ int main(int argc, char **argv)
 
 	for (size_t i = 0; i < iFileCount; i++)
 	{
-		t_commit_type eType = eGitCharToType(pArrFiles[i].cStatus);
-		char *sMsg = strBuildCommitMessage(pArrFiles[i].sPath, eType);
-		if (!sMsg)
-			continue;
+		t_commit_type eType = eGitCharToType(arrFiles[i].cStatus);
+		char *sMsg = strBuildCommitMessage(arrFiles[i].sPath, eType);
+		if (!sMsg) continue;
 
 		if (bSafeMode)
 		{
@@ -52,59 +52,40 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		if ((eType == COMMIT_ADD || eType == COMMIT_MODIFY || eType == COMMIT_RENAME) && access(pArrFiles[i].sPath, F_OK) != 0)
-		{
-			printf("[SKIP] %s (file missing)\n", pArrFiles[i].sPath);
-			free(sMsg);
-			continue;
-		}
+		char tmpFile[256];
+		snprintf(tmpFile, sizeof(tmpFile), ".commitmsg_%lu_%zu.tmp", (unsigned long)time(NULL), i);
+		FILE *f = fopen(tmpFile, "wb");
+		if (!f) { free(sMsg); continue; }
+		fwrite(sMsg, 1, strlen(sMsg), f);
+		fclose(f);
 
-		char sTmpName[256];
-		snprintf(sTmpName, sizeof(sTmpName), ".commitmsg_%lu_%zu.tmp", (unsigned long)time(NULL), i);
-
-		FILE *pTmp = fopen(sTmpName, "wb");
-		if (!pTmp)
-		{
-			free(sMsg);
-			continue;
-		}
-		fwrite(sMsg, 1, strlen(sMsg), pTmp);
-		fclose(pTmp);
-
-		char sCmd[2048];
-
+		char cmd[2048];
 		switch (eType)
 		{
 			case COMMIT_ADD:
 			case COMMIT_MODIFY:
-				snprintf(sCmd, sizeof(sCmd),
-					"git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
-					pArrFiles[i].sPath, sTmpName, pArrFiles[i].sPath);
+			case COMMIT_RENAME:
+				snprintf(cmd, sizeof(cmd), "git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
+					arrFiles[i].sPath, tmpFile, arrFiles[i].sPath);
 				break;
 			case COMMIT_DELETE:
-				snprintf(sCmd, sizeof(sCmd),
-					"git rm \"%s\" && git commit -F \"%s\" -- \"%s\"",
-					pArrFiles[i].sPath, sTmpName, pArrFiles[i].sPath);
-				break;
-			case COMMIT_RENAME:
-				{
-					char sOldPath[1024];
-					snprintf(sOldPath, sizeof(sOldPath), "%s", pArrFiles[i].sPath);
-					snprintf(sCmd, sizeof(sCmd),
-						"git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
-						pArrFiles[i].sPath, sTmpName, pArrFiles[i].sPath);
-				}
+				if (access(arrFiles[i].sPath, F_OK) == 0)
+					snprintf(cmd, sizeof(cmd), "git rm \"%s\" && git commit -F \"%s\" -- \"%s\"",
+						arrFiles[i].sPath, tmpFile, arrFiles[i].sPath);
+				else
+					snprintf(cmd, sizeof(cmd), "git rm --cached \"%s\" && git commit -F \"%s\" -- \"%s\"",
+						arrFiles[i].sPath, tmpFile, arrFiles[i].sPath);
 				break;
 			default:
-				snprintf(sCmd, sizeof(sCmd), "echo \"[UNKNOWN] %s\"", sMsg);
+				snprintf(cmd, sizeof(cmd), "echo \"[UNKNOWN] %s\"", sMsg);
 				break;
 		}
 
-		iRunGitCommand(sCmd);
-		remove(sTmpName);
+		iRunGitCommand(cmd);
+		remove(tmpFile);
 		free(sMsg);
 	}
 
-	vcFreeGitFiles(pArrFiles, iFileCount);
+	vcFreeGitFiles(arrFiles, iFileCount);
 	return 0;
 }

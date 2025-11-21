@@ -73,45 +73,88 @@ static void vcReadGitDiff(const char *sCmd, t_git_file **arr, size_t *piLen, siz
 
 t_git_file *arrGetGitFiles(size_t *piCount)
 {
-	t_git_file *arr;
-	size_t iCap = 16;
+	FILE *p;
+	char buf[4096];
+	size_t iCap = 32;
 	size_t iLen = 0;
+	t_git_file *arr;
+
+	*piCount = 0;
+
+	p = POPEN("git diff --name-status HEAD && git ls-files --others --exclude-standard", "r");
+	if (!p)
+		return NULL;
 
 	arr = malloc(sizeof(t_git_file) * iCap);
 	if (!arr)
 	{
-		*piCount = 0;
+		PCLOSE(p);
 		return NULL;
 	}
 
-	*piCount = 0;
-
-	// 1️⃣ Fichiers staged
-	vcReadGitDiff("git diff --cached --name-status", &arr, &iLen, &iCap, 1);
-
-	// 2️⃣ Fichiers unstaged
-	vcReadGitDiff("git diff --name-status HEAD", &arr, &iLen, &iCap, 1);
-
-	// 3️⃣ Fichiers untracked
-	FILE *p = POPEN("git ls-files --others --exclude-standard", "r");
-	if (p)
+	while (fgets(buf, sizeof(buf), p))
 	{
-		char buf[1024];
-		while (fgets(buf, sizeof(buf), p))
-		{
-			size_t i = strlen(buf);
-			while (i > 0 && (buf[i-1]=='\n'||buf[i-1]=='\r')) buf[--i]='\0';
-			if (i < 1) continue;
+		size_t i = strlen(buf);
+		while (i > 0 && (buf[i - 1] == '\n' || buf[i - 1] == '\r'))
+			buf[--i] = '\0';
+		if (i == 0)
+			continue;
 
-			arr = vcAppendFile(arr, &iLen, &iCap, buf, '?');
+		char cStatus = buf[0];
+		char *sPath1 = NULL;
+		char *sPath2 = NULL;
+
+		if (cStatus == 'R') // renamed
+		{
+			// Format: R<score>\told_path\tnew_path
+			char *tab1 = strchr(buf, '\t');
+			if (!tab1) continue;
+			char *tab2 = strchr(tab1 + 1, '\t');
+			if (!tab2) continue;
+
+			*tab2 = '\0';
+			sPath1 = tab1 + 1; // old
+			sPath2 = tab2 + 1; // new
 		}
-		PCLOSE(p);
+		else if (cStatus == '?' || cStatus == 'M' || cStatus == 'A' || cStatus == 'D')
+		{
+			// tab-separated after status
+			char *tab = buf + 1;
+			while (*tab == '\t' || *tab == ' ')
+				tab++;
+			sPath1 = tab;
+		}
+		else
+		{
+			continue;
+		}
+
+		if (iLen + 1 >= iCap)
+		{
+			iCap *= 2;
+			t_git_file *pNew = realloc(arr, sizeof(t_git_file) * iCap);
+			if (!pNew) break;
+			arr = pNew;
+		}
+
+		if (cStatus == 'R')
+		{
+			arr[iLen].sPath = strdup(sPath2);
+			arr[iLen].cStatus = cStatus;
+		}
+		else
+		{
+			arr[iLen].sPath = strdup(sPath1);
+			arr[iLen].cStatus = cStatus;
+		}
+		if (!arr[iLen].sPath) continue;
+		iLen++;
 	}
 
+	PCLOSE(p);
 	if (iLen == 0)
 	{
 		free(arr);
-		*piCount = 0;
 		return NULL;
 	}
 

@@ -13,7 +13,7 @@ static t_commit_type eGitCharToType(char c)
 	switch (c)
 	{
 		case 'A': return COMMIT_ADD;
-		case '?': return COMMIT_ADD; // Untracked
+		case '?': return COMMIT_ADD;
 		case 'M': return COMMIT_MODIFY;
 		case 'D': return COMMIT_DELETE;
 		case 'R': return COMMIT_RENAME;
@@ -31,6 +31,7 @@ int main(int argc, char **argv)
 		bSafeMode = 1;
 
 	vInitUtf8();
+
 	pArrFiles = arrGetGitFiles(&iFileCount);
 	if (!pArrFiles || iFileCount == 0)
 	{
@@ -52,7 +53,6 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		// Créer un fichier temporaire pour le commit (UTF-8 safe)
 		char sTmpName[256];
 		snprintf(sTmpName, sizeof(sTmpName), ".commitmsg_%lu_%zu.tmp", (unsigned long)time(NULL), i);
 
@@ -62,22 +62,20 @@ int main(int argc, char **argv)
 			free(sMsg);
 			continue;
 		}
+
 		fwrite(sMsg, 1, strlen(sMsg), pTmp);
 		fclose(pTmp);
 
-		char sCmd[2048];
-
+		char sCmd[4096];
 		switch (eType)
 		{
 			case COMMIT_ADD:
 			case COMMIT_MODIFY:
-			case COMMIT_RENAME:
 				if (access(pArrFiles[i].sPath, F_OK) == 0)
 					snprintf(sCmd, sizeof(sCmd),
 						"git add \"%s\" && git commit -F \"%s\" -- \"%s\"",
 						pArrFiles[i].sPath, sTmpName, pArrFiles[i].sPath);
 				else
-					// fichier disparu avant commit → ignorer ou utiliser --cached si nécessaire
 					snprintf(sCmd, sizeof(sCmd),
 						"echo \"[SKIP] %s\"",
 						pArrFiles[i].sPath);
@@ -93,6 +91,29 @@ int main(int argc, char **argv)
 						"git rm --cached \"%s\" && git commit -F \"%s\" -- \"%s\"",
 						pArrFiles[i].sPath, sTmpName, pArrFiles[i].sPath);
 				break;
+
+			case COMMIT_RENAME:
+			{
+				char *sSpace = strchr(pArrFiles[i].sPath, ' ');
+				if (sSpace)
+				{
+					*sSpace = '\0';
+					const char *sOld = pArrFiles[i].sPath;
+					const char *sNew = sSpace + 1;
+
+					if (access(sNew, F_OK) == 0)
+						snprintf(sCmd, sizeof(sCmd),
+							"git add \"%s\" && git rm --cached \"%s\" && git commit -F \"%s\" -- \"%s\"",
+							sNew, sOld, sTmpName, sNew);
+					else
+						snprintf(sCmd, sizeof(sCmd),
+							"echo \"[SKIP RENAME] %s -> %s\"", sOld, sNew);
+				}
+				else
+					snprintf(sCmd, sizeof(sCmd),
+						"echo \"[INVALID R FORMAT] %s\"", pArrFiles[i].sPath);
+				break;
+			}
 
 			default:
 				snprintf(sCmd, sizeof(sCmd), "echo \"[UNKNOWN] %s\"", sMsg);

@@ -100,12 +100,12 @@ static const t_commit_rule gCommitRules[] =
 		}
 	},
 	{
-		"lua/line_of_fire/objects/",
+		"lua/line_of_fire/classes/",
 		{
-			[COMMIT_ADD]    = { "feat", "🧱", "Added object definition" },
-			[COMMIT_MODIFY] = { "feat", "🧱", "Updated object definition" },
-			[COMMIT_DELETE] = { "feat", "🗑️", "Removed object definition" },
-			[COMMIT_RENAME] = { "feat", "🔄", "Renamed object definition" }
+			[COMMIT_ADD]    = { "feat", "🧱", "Added class definition" },
+			[COMMIT_MODIFY] = { "feat", "🧱", "Updated class definition" },
+			[COMMIT_DELETE] = { "feat", "🗑️", "Removed class definition" },
+			[COMMIT_RENAME] = { "feat", "🔄", "Renamed class definition" }
 		}
 	},
 	{

@@ -3,15 +3,10 @@
 #include <stdio.h>
 #include "auto_commit.h"
 #include "file_utils.h"
+#include "commit_rules.h"
 
-static const t_commit_rule *psFindRule(const char *sPath)
-{
-	for (size_t i = 0; gCommitRules[i].sPathPrefix; i++)
-	{
-		if (strncmp(sPath, gCommitRules[i].sPathPrefix, strlen(gCommitRules[i].sPathPrefix)) == 0)
-			return &gCommitRules[i];
-	}
-	return NULL;
+static const t_commit_rule *psFindRule(const char *sPath) {
+	return psFindDynamicRule(sPath);
 }
 
 static char *strDupSafe(const char *s)

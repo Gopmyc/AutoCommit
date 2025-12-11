@@ -1,4 +1,3 @@
-
 <a id="readme-top"></a>
 
 [![Contributors][contributors-shield]][contributors-url]
@@ -16,11 +15,11 @@
 
 <h3 align="center">AutoCommit</h3>
 
-  <p align="center">
-	An autonomous Git commit generator written in C.
-	Automatically analyses modified files, infers commit type from customizable rules, builds semantic commit messages, and updates project versioning.
+<p align="center">
+	An autonomous Git commit generator written in C.  
+	Automatically analyses modified files, infers commit type from customizable rules, builds semantic commit messages, and updates project versioning.  
 	<br /><br />
-	Configurable, fast, and designed for real automation workflows.
+	Configurable, fast, and designed for real automation workflows.  
 	<br />
 	<br />
 	<a href="https://github.com/Gopmyc/AutoCommit"><strong>Explore the source »</strong></a>
@@ -29,7 +28,7 @@
 	<a href="https://github.com/Gopmyc/AutoCommit/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
 	·
 	<a href="https://github.com/Gopmyc/AutoCommit/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
-  </p>
+</p>
 </div>
 
 ---
@@ -64,34 +63,96 @@ Designed for developers who want consistent commit history without thinking abou
 
 ## Getting Started
 
-This section explains how to build and use the tool locally.
+Follow these instructions to build and use AutoCommit locally.
 
 ### Prerequisites
-
-You’ll need:
 
 * `gcc` or `clang`
 * Make
 * Git
-* A POSIX-compatible environment
+* A POSIX-compatible environment (MSYS2, WSL, Cygwin)
 
 ### Installation
 
 1. Clone the repo:
 
-   ```bash
-   git clone https://github.com/Gopmyc/AutoCommit.git
-   cd AutoCommit
-   ```
+```bash
+git clone https://github.com/Gopmyc/AutoCommit.git
+cd AutoCommit
+```
 
 2. Build the program:
 
-   ```bash
-   make
-   ```
+```bash
+make
+```
 
-3. Ensure `commit_config.json` exists at the project root.
-   If you use the default one, you’re ready to go.
+3. Create a `commit_config.json` at the project root. Example:
+
+```json
+[
+  {
+    "path": "docs/",
+    "actions": {
+      "add":    { "tag": "docs", "emoji": "📚", "desc": "Added documentation files" },
+      "modify": { "tag": "docs", "emoji": "📚", "desc": "Updated documentation files" },
+      "delete": { "tag": "docs", "emoji": "🗑️", "desc": "Removed documentation files" },
+      "rename": { "tag": "docs", "emoji": "🔄", "desc": "Renamed documentation files" }
+    }
+  },
+  {
+    "path": "srcs/core/",
+    "actions": {
+      "add":    { "tag": "refactor", "emoji": "♻️", "desc": "Added core base systems" },
+      "modify": { "tag": "refactor", "emoji": "♻️", "desc": "Updated core base systems" },
+      "delete": { "tag": "refactor", "emoji": "🗑️", "desc": "Removed core base systems" },
+      "rename": { "tag": "refactor", "emoji": "🔄", "desc": "Renamed core base systems" }
+    }
+  },
+  {
+    "path": "srcs/classes/",
+    "actions": {
+      "add":    { "tag": "feat", "emoji": "🧱", "desc": "Added class definition" },
+      "modify": { "tag": "feat", "emoji": "🧱", "desc": "Updated class definition" },
+      "delete": { "tag": "feat", "emoji": "🗑️", "desc": "Removed class definition" },
+      "rename": { "tag": "feat", "emoji": "🔄", "desc": "Renamed class definition" }
+    }
+  },
+  {
+    "path": "configuration/",
+    "actions": {
+      "add":    { "tag": "chore", "emoji": "⚙️", "desc": "Added project configuration" },
+      "modify": { "tag": "chore", "emoji": "⚙️", "desc": "Updated project configuration" },
+      "delete": { "tag": "chore", "emoji": "🗑️", "desc": "Removed project configuration" },
+      "rename": { "tag": "chore", "emoji": "🔄", "desc": "Renamed project configuration" }
+    }
+  },
+  {
+    "path": "srcs/modules/",
+    "actions": {
+      "add":    { "tag": "feat", "emoji": "🧩", "desc": "Added server module" },
+      "modify": { "tag": "feat", "emoji": "🧩", "desc": "Updated server module" },
+      "delete": { "tag": "feat", "emoji": "🗑️", "desc": "Removed server module" },
+      "rename": { "tag": "feat", "emoji": "🔄", "desc": "Renamed server module" }
+    }
+  },
+  {
+    "path": "srcs/",
+    "actions": {
+      "add":    { "tag": "feat", "emoji": "🔥", "desc": "Added project logic" },
+      "modify": { "tag": "feat", "emoji": "🔥", "desc": "Updated project logic" },
+      "delete": { "tag": "feat", "emoji": "🗑️", "desc": "Removed project logic" },
+      "rename": { "tag": "feat", "emoji": "🔄", "desc": "Renamed project logic" }
+    }
+  }
+]
+```
+
+4. Run AutoCommit:
+
+```bash
+./auto_commit
+```
 
 <p align="right"><a href="#readme-top">🔝</a></p>
 

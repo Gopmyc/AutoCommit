@@ -11,7 +11,7 @@
 <br />
 <div align="center">
 	<a href="https://github.com/Gopmyc/AutoCommit">
-		<img src="autocommit_logo.png" alt="Logo" width="80" height="80">
+		<img src="auto_commit_logo.png" alt="Logo" width="80" height="80">
 	</a>
 
 <h3 align="center">AutoCommit</h3>
@@ -189,10 +189,6 @@ See [`LICENSE`](https://github.com/Gopmyc/AutoCommit/blob/main/LICENSE) for deta
 
 <p align="right"><a href="#readme-top">🔝</a></p>
 
----
-
-## Markdown Badges
-
 [contributors-shield]: https://img.shields.io/github/contributors/Gopmyc/AutoCommit.svg?style=for-the-badge
 [contributors-url]: https://github.com/Gopmyc/AutoCommit/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/Gopmyc/AutoCommit.svg?style=for-the-badge
@@ -205,5 +201,3 @@ See [`LICENSE`](https://github.com/Gopmyc/AutoCommit/blob/main/LICENSE) for deta
 [license-url]: https://github.com/Gopmyc/AutoCommit/blob/main/LICENSE
 [email-shield]: https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white
 [email-url]: mailto:gopmyc.pro@gmail.com
-
----

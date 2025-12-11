@@ -17,7 +17,7 @@
 
 <p align="center">
 	An autonomous Git commit generator written in C.  
-	Automatically analyses modified files, infers commit type from customizable rules, builds semantic commit messages, and updates project versioning.  
+	Automatically analyzes modified files, infers commit type from customizable rules, builds semantic commit messages, and updates project versioning.  
 	<br /><br />
 	Configurable, fast, and designed for real automation workflows.  
 	<br />
@@ -72,7 +72,9 @@ Follow these instructions to build and use AutoCommit locally.
 * Git
 * A POSIX-compatible environment (MSYS2, WSL, Cygwin)
 
-### Installation
+---
+
+### Installation (POSIX / Linux / macOS)
 
 1. Clone the repo:
 
@@ -108,42 +110,6 @@ make
       "delete": { "tag": "refactor", "emoji": "🗑️", "desc": "Removed core base systems" },
       "rename": { "tag": "refactor", "emoji": "🔄", "desc": "Renamed core base systems" }
     }
-  },
-  {
-    "path": "srcs/classes/",
-    "actions": {
-      "add":    { "tag": "feat", "emoji": "🧱", "desc": "Added class definition" },
-      "modify": { "tag": "feat", "emoji": "🧱", "desc": "Updated class definition" },
-      "delete": { "tag": "feat", "emoji": "🗑️", "desc": "Removed class definition" },
-      "rename": { "tag": "feat", "emoji": "🔄", "desc": "Renamed class definition" }
-    }
-  },
-  {
-    "path": "configuration/",
-    "actions": {
-      "add":    { "tag": "chore", "emoji": "⚙️", "desc": "Added project configuration" },
-      "modify": { "tag": "chore", "emoji": "⚙️", "desc": "Updated project configuration" },
-      "delete": { "tag": "chore", "emoji": "🗑️", "desc": "Removed project configuration" },
-      "rename": { "tag": "chore", "emoji": "🔄", "desc": "Renamed project configuration" }
-    }
-  },
-  {
-    "path": "srcs/modules/",
-    "actions": {
-      "add":    { "tag": "feat", "emoji": "🧩", "desc": "Added server module" },
-      "modify": { "tag": "feat", "emoji": "🧩", "desc": "Updated server module" },
-      "delete": { "tag": "feat", "emoji": "🗑️", "desc": "Removed server module" },
-      "rename": { "tag": "feat", "emoji": "🔄", "desc": "Renamed server module" }
-    }
-  },
-  {
-    "path": "srcs/",
-    "actions": {
-      "add":    { "tag": "feat", "emoji": "🔥", "desc": "Added project logic" },
-      "modify": { "tag": "feat", "emoji": "🔥", "desc": "Updated project logic" },
-      "delete": { "tag": "feat", "emoji": "🗑️", "desc": "Removed project logic" },
-      "rename": { "tag": "feat", "emoji": "🔄", "desc": "Renamed project logic" }
-    }
   }
 ]
 ```
@@ -154,7 +120,47 @@ make
 ./auto_commit
 ```
 
-<p align="right"><a href="#readme-top">🔝</a></p>
+---
+
+### Installation (Windows with MinGW/MSYS2 + CMake)
+
+1. Install **MSYS2**: [https://www.msys2.org](https://www.msys2.org)
+   Update packages:
+
+```bash
+pacman -Syu
+```
+
+2. Install required tools in MSYS2 MinGW 64-bit:
+
+```bash
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake git
+```
+
+3. Clone the repository:
+
+```bash
+git clone https://github.com/Gopmyc/AutoCommit.git
+cd AutoCommit
+```
+
+4. Build with CMake:
+
+```bash
+mkdir build
+cd build
+cmake .. -G "MinGW Makefiles"
+cmake --build .
+```
+
+5. The icon is embedded automatically from `builds/icon.rc`.
+   The executable (`auto_commit.exe`) will be in `build/`.
+
+6. Test in safe mode:
+
+```bash
+./auto_commit.exe --safe
+```
 
 ---
 
@@ -186,7 +192,7 @@ make
 
 AutoCommit will:
 
-1. Detect modified files through `git status`
+1. Detect modified files via `git status`
 2. Match each file against rules in `commit_config.json`
 3. Generate a semantic commit message
 4. Optionally increment and save the version
@@ -202,7 +208,7 @@ AutoCommit will:
 * [x] Auto-versioning
 * [x] Safe mode
 * [x] Modular internal architecture
-* [ ] Windows support (cross-platform commits)
+* [x] Windows native support (cross-platform commits)
 * [ ] Rule overrides via CLI
 * [ ] Extended rule matching (regex, glob patterns)
 * [ ] Multi-file commit batching

@@ -16,10 +16,10 @@
 <h3 align="center">AutoCommit</h3>
 
 <p align="center">
-	An autonomous Git commit generator written in C.  
-	Automatically analyzes modified files, infers commit type from customizable rules, builds semantic commit messages, and updates project versioning.  
+	A deterministic Git commit generator written in C.<br />
+	Automatically analyzes modified files, applies explicit rule-based logic, builds semantic commit messages (with emoji support), and optionally updates project versioning.
 	<br /><br />
-	Configurable, fast, and designed for real automation workflows.  
+	Predictable, auditable, and designed for real automation workflows.
 	<br />
 	<br />
 	<a href="https://github.com/Gopmyc/AutoCommit"><strong>Explore the source »</strong></a>
@@ -35,19 +35,136 @@
 
 ## About The Project
 
-`AutoCommit` is a command-line utility that automates Git commit creation based on detected file changes.
-It loads rules from a JSON configuration (via `cJSON`), determines commit type, generates semantic commit messages, and optionally increments the project version.
+`AutoCommit` is a low-level command-line utility that automates Git commit creation based on detected file changes and explicit configuration rules.
 
-Designed for developers who want consistent commit history without thinking about wording or categories.
+It does **not** rely on AI, heuristics, or diff-based intent inference. Every commit message is the result of deterministic logic implemented in C and driven by a JSON configuration.
+
+The goal is simple: produce **high-signal, reproducible commit history** suitable for humans and automation alike.
+
+### What AutoCommit Is (and Is Not)
+
+AutoCommit **does not**:
+
+* infer intent from code diffs
+* inspect function-level changes
+* guess features or business logic
+
+Instead, it:
+
+* analyzes the Git working tree
+* detects added, modified, deleted, and renamed files
+* matches file paths against explicit rules
+* generates semantic commit messages based on those rules
+
+If you value determinism, predictability, and clarity over magic, AutoCommit fits.
 
 ### Key Features
 
-* 📂 Smart detection of modified, added, deleted, and renamed files
-* 🧠 JSON-driven commit rules
-* ✨ Automatic semantic commit formatting
-* 🔢 Version auto-increment (`VERSION` file)
-* 🛡️ Safe mode for debugging without committing
-* 🚫 Optional `--no-version` mode
+* 📂 Smart detection of file changes via Git
+* 🧠 JSON-driven rule system
+* ✨ Semantic commit messages with optional emojis
+* 🔢 Optional automatic version increment (`VERSION` file)
+* 🛡️ Safe mode (dry-run, no commit)
+* 🚫 `--no-version` mode
+* ⚡ Written in pure C (fast, portable, minimal dependencies)
+
+<p align="right"><a href="#readme-top">🔝</a></p>
+
+---
+
+## Why This Exists
+
+In many workflows, commits are either:
+
+* manually written but inconsistent
+* automated but meaningless
+
+Typical noise looks like:
+
+```
+update file
+fix stuff
+modified x.c
+```
+
+AutoCommit targets the middle ground:
+
+* zero manual effort
+* no loss of semantic clarity
+
+---
+
+## How It Works (Technical Overview)
+
+1. `git status` is parsed to identify file changes
+
+2. Each file is classified (add / modify / delete / rename)
+
+3. Paths are matched against rules defined in `commit_config.json`
+
+4. Rules emit:
+
+   * a commit tag (`feat`, `refactor`, `docs`, `chore`, …)
+   * an optional emoji
+   * a human-readable description
+
+5. A single aggregated commit message is produced and applied
+
+All logic lives in explicit C headers and source files to keep behavior transparent and auditable.
+
+---
+
+## Commit Message Examples
+
+### Example Output
+
+```
+ feat (<scope>): ✨ add configurable commit rules
+ refactor (<scope>): ♻️ simplify versioning logic
+ docs (<scope>): 📚 update usage documentation
+```
+
+### Mixed Changes
+
+```
+ refactor (<scope>): ♻️ restructure core processing logic
+ chore (<scope>): 📦 update project configuration
+```
+
+Emoji usage is optional and fully controlled by configuration.
+
+<p align="right"><a href="#readme-top">🔝</a></p>
+
+---
+
+## Configuration
+
+AutoCommit behavior is driven by a JSON configuration file.
+
+Example `commit_config.json`:
+
+```json
+[
+  {
+    "path": "docs/",
+    "actions": {
+      "add":    { "tag": "docs", "emoji": "📚", "desc": "add documentation" },
+      "modify": { "tag": "docs", "emoji": "📚", "desc": "update documentation" },
+      "delete": { "tag": "docs", "emoji": "🗑️", "desc": "remove documentation" },
+      "rename": { "tag": "docs", "emoji": "🔄", "desc": "rename documentation" }
+    }
+  },
+  {
+    "path": "srcs/core/",
+    "actions": {
+      "add":    { "tag": "feat", "emoji": "✨", "desc": "add core functionality" },
+      "modify": { "tag": "refactor", "emoji": "♻️", "desc": "refactor core logic" }
+    }
+  }
+]
+```
+
+Rules are evaluated top-down. The first matching rule applies.
 
 <p align="right"><a href="#readme-top">🔝</a></p>
 
@@ -63,177 +180,82 @@ Designed for developers who want consistent commit history without thinking abou
 
 ## Getting Started
 
-Follow these instructions to build and use AutoCommit locally.
-
 ### Prerequisites
 
-* `gcc` or `clang`
-* Make
 * Git
-* A POSIX-compatible environment (MSYS2, WSL, Cygwin)
+* Make
+* GCC or Clang
+* POSIX-compatible environment (Linux, macOS, WSL, MSYS2)
 
 ---
 
 ### Installation (POSIX / Linux / macOS)
 
-1. Clone the repo:
-
 ```bash
 git clone https://github.com/Gopmyc/AutoCommit.git
 cd AutoCommit
-```
-
-2. Build the program:
-
-```bash
 make
-```
-
-3. Create a `commit_config.json` at the project root. Example:
-
-```json
-[
-  {
-    "path": "docs/",
-    "actions": {
-      "add":    { "tag": "docs", "emoji": "📚", "desc": "Added documentation files" },
-      "modify": { "tag": "docs", "emoji": "📚", "desc": "Updated documentation files" },
-      "delete": { "tag": "docs", "emoji": "🗑️", "desc": "Removed documentation files" },
-      "rename": { "tag": "docs", "emoji": "🔄", "desc": "Renamed documentation files" }
-    }
-  },
-  {
-    "path": "srcs/core/",
-    "actions": {
-      "add":    { "tag": "refactor", "emoji": "♻️", "desc": "Added core base systems" },
-      "modify": { "tag": "refactor", "emoji": "♻️", "desc": "Updated core base systems" },
-      "delete": { "tag": "refactor", "emoji": "🗑️", "desc": "Removed core base systems" },
-      "rename": { "tag": "refactor", "emoji": "🔄", "desc": "Renamed core base systems" }
-    }
-  }
-]
-```
-
-4. Run AutoCommit:
-
-```bash
-./auto_commit
 ```
 
 ---
 
-### Installation (Windows with MinGW/MSYS2 + CMake)
-
-1. Install **MSYS2**: [https://www.msys2.org](https://www.msys2.org)
-   Update packages:
+### Installation (Windows with MSYS2 + CMake)
 
 ```bash
 pacman -Syu
-```
-
-2. Install required tools in MSYS2 MinGW 64-bit:
-
-```bash
 pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake git
-```
 
-3. Clone the repository:
-
-```bash
 git clone https://github.com/Gopmyc/AutoCommit.git
 cd AutoCommit
-```
-
-4. Build with CMake:
-
-```bash
 mkdir build
 cd build
 cmake .. -G "MinGW Makefiles"
 cmake --build .
 ```
 
-5. The icon is embedded automatically from `builds/icon.rc`.
-   The executable (`auto_commit.exe`) will be in `build/`.
-
-6. Test in safe mode:
-
-```bash
-./auto_commit.exe --safe
-```
-
 ---
 
 ## Usage
 
-### Basic usage
-
 ```bash
 ./auto_commit
-```
-
-### Debug (dry-run)
-
-```bash
 ./auto_commit --safe
-```
-
-### Disable version updates
-
-```bash
 ./auto_commit --no-version
-```
-
-### Combined
-
-```bash
-./auto_commit --safe --no-version
 ```
 
 AutoCommit will:
 
-1. Detect modified files via `git status`
-2. Match each file against rules in `commit_config.json`
-3. Generate a semantic commit message
-4. Optionally increment and save the version
-5. Execute the corresponding Git commands
+1. detect modified files
+2. match them against rules
+3. generate a semantic commit message
+4. optionally update the version
+5. execute the Git commit
 
 <p align="right"><a href="#readme-top">🔝</a></p>
+
+---
+
+## Limitations (By Design)
+
+AutoCommit intentionally does **not**:
+
+* inspect diff hunks
+* understand function-level intent
+* infer business logic
+* split commits automatically
+
+Multiple unrelated changes in the same directory will be grouped.
+
+This trade-off favors determinism and simplicity.
 
 ---
 
 ## Roadmap
 
-* [x] JSON-driven rule system
-* [x] Auto-versioning
-* [x] Safe mode
-* [x] Modular internal architecture
-* [x] Windows native support (cross-platform commits)
-* [ ] Rule overrides via CLI
-* [ ] Extended rule matching (regex, glob patterns)
-* [ ] Multi-file commit batching
-
-Feature suggestions are welcome via the Issues tab.
-
-<p align="right"><a href="#readme-top">🔝</a></p>
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-1. Fork the repo
-2. Create your branch (`git checkout -b feature/NewFeature`)
-3. Commit your changes (`git commit -m 'Add NewFeature'`)
-4. Push (`git push origin feature/NewFeature`)
-5. Create a Pull Request
-
-### Contributors
-
-<a href="https://github.com/Gopmyc/AutoCommit/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Gopmyc/AutoCommit" />
-</a>
+* Regex / glob-based rules
+* Git hook integration
+* Improved rule conflict detection
+* Multi-commit output support
 
 <p align="right"><a href="#readme-top">🔝</a></p>
 
@@ -242,7 +264,7 @@ Contributions are welcome.
 ## License
 
 Distributed under the MIT License.
-See [`LICENSE`](https://github.com/Gopmyc/AutoCommit/blob/main/LICENSE) for details.
+See `LICENSE` for details.
 
 <p align="right"><a href="#readme-top">🔝</a></p>
 

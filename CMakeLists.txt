@@ -4,20 +4,17 @@ project(AutoCommit C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
-# Inclure les headers
 include_directories(${PROJECT_SOURCE_DIR}/includes)
 
-# Sources
 file(GLOB SRC "srcs/*.c" "libraries/cJSON/*.c")
 
-# Binaire
-set(BIN ${PROJECT_SOURCE_DIR}/builds/auto_commit)
+set(EXECUTABLE_NAME auto_commit)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/builds")
 
-# Détecter Windows pour l’icône
 if(WIN32)
     set(ICON_RC ${PROJECT_SOURCE_DIR}/builds/icon.rc)
     enable_language(RC)
-    add_executable(${BIN} ${SRC} ${ICON_RC})
+    add_executable(${EXECUTABLE_NAME} ${SRC} ${ICON_RC})
 else()
-    add_executable(${BIN} ${SRC})
+    add_executable(${EXECUTABLE_NAME} ${SRC})
 endif()
